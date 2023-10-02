@@ -80,7 +80,7 @@ def serverListen(serverSocket):
 			response = serverSocket.recv(1024).decode("utf-8")
 			if response == "/proceed":
 				state["inputMessage"] = False
-				print("Please enter the username to kick: ")
+				print("Please enter the username to Remove: ")
 				with state["inputCondition"]:
 					state["inputCondition"].wait()
 				state["inputMessage"] = True
@@ -91,7 +91,7 @@ def serverListen(serverSocket):
 		elif msg == "/kicked":
 			state["alive"] = False
 			state["inputMessage"] = False
-			print("You have been kicked. Press any key to quit.")
+			print("You have been Removed. Press any key to quit.")
 			break
 		elif msg == "/fileTransfer":
 			state["inputMessage"] = False
@@ -239,11 +239,11 @@ def main():
 					response = serverSocket.recv(1024).decode("utf-8")
 					if response == "/OTPverification" :
 						enter_otp = input("Enter the OTP send to your mail : ") ;
-						print("registrate")
+						print("Registration Successful")
 						if  enter_otp == state["otp"] : 
 							serverSocket.send(b"/Success")
 						else :
-							print("Invalid OTP!")
+							print("Invalid OTP! User registration failed!")
 							serverSocket.send(b"/failed")
        
 			else:
@@ -264,7 +264,7 @@ def main():
 				else :
 					print("Authentication failed")
 		
-
+	serverSocket.send(b"/finish")
 	state["groupname"] = input("Please enter the name of the group: ")
 	state["alive"] = False
 	state["joinDisconnect"] = False
@@ -292,7 +292,7 @@ def main():
 		if state["alive"] or state["joinDisconnect"]:
 			break
 	if state["alive"]:
-		print("Available Commands:\n/1 -> View Join Requests (Admins)\n/2 -> Approve Join Requests (Admin)\n/3 -> Disconnect\n/4 -> View All Members\n/5 -> View Online Group Members\n/6 -> Transfer Adminship\n/7 -> Check Group Admin\n/8 -> Kick Member\n/9 -> File Transfer\nType anything else to send a message")
+		print("Available Commands:\n/1 -> View Join Requests (Admins)\n/2 -> Approve Join Requests (Admin)\n/3 -> Disconnect\n/4 -> View All Members\n/5 -> View Online Group Members\n/6 -> Transfer Adminship\n/7 -> Check Group Admin\n/8 -> Remove Member\n/9 -> Transfer Files\nType anything else to send a message")
 		waitUserInputThread.join()
 		waitServerListenThread.join()
 		userInputThread.start()

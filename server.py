@@ -211,74 +211,77 @@ def authenticate_user(usr, pswd):
     return user is not None
 		
 def handshake(client):
-    msg = client.recv(1024).decode("utf-8") 
-    if msg == "/Registration" : 
-        client.send(b"/Registration")
-        username = client.recv(1024).decode("utf-8") 
-        client.send(b"uname")
-        password = client.recv(1024).decode("utf-8") 
-        client.send(b"pass")
-        email = client.recv(1024).decode("utf-8") 
-        client.send(b"mail")
-        otp = client.recv(1024).decode("utf-8")
-        print(username,password,email,otp)
-        send_otp( email , otp )
-        client.send(b"/OTPverification")
-        # client.recv(1024).decode("utf-8")
-        resp = client.recv(1024).decode("utf-8")
-        if resp == "/Success" :
-            # Connect to the database
-            conn = sqlite3.connect('user_credentials.db')
-            cursor = conn.cursor()
-            
-            try:	
-                activation = True
-                insert_data_sql = '''
-                INSERT INTO user_credentials (username, password, email, activation)
-    		    VALUES (?, ?, ?, ?)
-    		    '''
-                cursor.execute(insert_data_sql, (username, password, email, activation))
-                # Commit the changes to the database
-                conn.commit()
-                print("Data inserted into user_credentials.db successfully.") 
-            except Exception as e:
-                print(f"Error: {e}")
-            finally:
-                # Close the database connection
-                conn.close()
-        else:
-            print("Invalid OTP")
-    elif msg == "/Login" :
-        client.send(b"/Login")
-        username = client.recv(1024).decode("utf-8")
-        client.send(b"/uname")
-        password = client.recv(1024).decode("utf-8")
-        if authenticate_user( username, password):
-            client.send(b"/Success")
-            print("authenticate success")
-        else:
-            client.send(b"/Failed")
-
-    username = client.recv(1024).decode("utf-8")
-    client.send(b"/sendGroupname")
-    groupname = client.recv(1024).decode("utf-8")
-    if groupname in groups:
-        if username in groups[groupname].allMembers:
-            groups[groupname].connect(username,client)
-            client.send(b"/ready")
-            print("User Connected:",username,"| Group:",groupname)
-        else:
-            groups[groupname].joinRequests.add(username)
-            groups[groupname].waitClients[username] = client
-            groups[groupname].sendMessage(username+" has requested to join the group.","Group session")
-            client.send(b"/wait")
-            print("Join Request:",username,"| Group:",groupname)
-        threading.Thread(target=studyChat, args=(client, username, groupname,)).start()
-    else:
-        groups[groupname] = Group(username,client)
-        threading.Thread(target=studyChat, args=(client, username, groupname,)).start()
-        client.send(b"/adminReady")
-        print("New Group:",groupname,"| Admin:",username)
+	while(1):
+		msg = client.recv(1024).decode("utf-8") 
+		if msg == "/Registration" : 
+			client.send(b"/Registration")
+			username = client.recv(1024).decode("utf-8") 
+			client.send(b"uname")
+			password = client.recv(1024).decode("utf-8") 
+			client.send(b"pass")
+			email = client.recv(1024).decode("utf-8") 
+			client.send(b"mail")
+			otp = client.recv(1024).decode("utf-8")
+			print("Username: ",username, "\nPassword: ",password, "\nEmail: ",email,"\nOTP: ",otp)
+			send_otp( email , otp )
+			client.send(b"/OTPverification")
+			# client.recv(1024).decode("utf-8")
+			resp = client.recv(1024).decode("utf-8")
+			if resp == "/Success" :
+				# Connect to the database
+				conn = sqlite3.connect('user_credentials.db')
+				cursor = conn.cursor()
+				
+				try:	
+					activation = True
+					insert_data_sql = '''
+					INSERT INTO user_credentials (username, password, email, activation)
+					VALUES (?, ?, ?, ?)
+					'''
+					cursor.execute(insert_data_sql, (username, password, email, activation))
+					# Commit the changes to the database
+					conn.commit()
+					print("Data inserted into user_credentials.db successfully.") 
+				except Exception as e:
+					print(f"Error: {e}")
+				finally:
+					# Close the database connection
+					conn.close()
+			else:
+				print("Invalid OTP")
+		elif msg == "/Login" :
+			client.send(b"/Login")
+			username = client.recv(1024).decode("utf-8")
+			client.send(b"/uname")
+			password = client.recv(1024).decode("utf-8")
+			if authenticate_user( username, password):
+				client.send(b"/Success")
+				print(username, "is online")
+			else:
+				client.send(b"/Failed")
+		elif msg == "/finish":
+			break;
+	
+	username = client.recv(1024).decode("utf-8")
+	client.send(b"/sendGroupname")
+	groupname = client.recv(1024).decode("utf-8")
+	if groupname in groups:
+		if username in groups[groupname].allMembers:
+				groups[groupname].connect(username,client)
+				client.send(b"/ready")
+				print("User Connected:",username,"| Group:",groupname)
+		else:
+				groups[groupname].joinRequests.add(username)
+				groups[groupname].waitClients[username] = client
+				groups[groupname].sendMessage(username+" has requested to join the group.","Group session")
+				client.send(b"/wait")
+				print("Join Request:",username,"| Group:",groupname)
+		threading.Thread(target=studyChat, args=(client, username, groupname,)).start()
+	else:
+		groups[groupname] = Group(username,client)
+		threading.Thread(target=studyChat, args=(client, username, groupname,)).start()
+		client.send(b"/adminReady")
+		print("New Group:",groupname,"| Admin:",username)
 
 def main():
 	if len(sys.argv) < 3:
